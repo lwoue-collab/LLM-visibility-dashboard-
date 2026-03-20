@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Points — LLM Intelligence Hub</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #E8341A; --red-dim: rgba(232,52,26,0.12);
+  --ink: #141210; --ink2: #3D3A36; --ink3: #7A7570; --ink4: #B0ABA5;
+  --surface: #F7F6F4; --white: #FFFFFF;
+  --border: #E4E0DA; --border2: #C8C3BB;
+  --green: #1A7A4A; --green-bg: #EAF5EF;
+  --amber: #B85C00; --amber-bg: #FEF3E6;
+  --blue: #1A4FA0; --blue-bg: #EBF1FB;
+  --purple: #5B3DAE; --purple-bg: #F0EDFB;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; }
+
+/* ─── HEADER ─── */
+.header {
+  background: var(--ink); padding: 0 2.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px; border-bottom: 2px solid var(--red);
+  position: sticky; top: 0; z-index: 200;
+}
+.header-brand { display: flex; align-items: center; gap: 14px; }
+.header-logo { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: white; background: var(--red); padding: 4px 10px; border-radius: 4px; }
+.header-title { font-size: 0.88rem; color: rgba(255,255,255,0.6); font-weight: 300; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+/* ─── SIDEBAR + LAYOUT ─── */
+.layout { display: flex; min-height: calc(100vh - 60px); }
+.sidebar { width: 280px; min-width: 280px; background: var(--white); border-right: 1px solid var(--border); padding: 1.5rem 1.25rem; display: flex; flex-direction: column; gap: 0; overflow-y: auto; }
+.main { flex: 1; overflow-y: auto; padding: 2rem 2.5rem; }
+
+/* ─── SIDEBAR SECTIONS ─── */
+.sb-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink4); margin-bottom: 8px; margin-top: 20px; }
+.sb-label:first-child { margin-top: 0; }
+.date-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.date-row label { font-size: 0.72rem; color: var(--ink3); }
+.date-row input[type="date"] { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--ink); background: var(--surface); outline: none; }
+.date-row input[type="date"]:focus { border-color: var(--red); }
+
+.btn-load { width: 100%; padding: 10px; font-size: 0.82rem; font-weight: 600; background: var(--red); color: white; border: none; border-radius: 7px; cursor: pointer; transition: opacity .15s; margin-bottom: 16px; letter-spacing: 0.01em; }
+.btn-load:hover { opacity: .88; }
+.btn-load:disabled { opacity: .4; cursor: not-allowed; }
+
+.snapshot-list { display: flex; flex-direction: column; gap: 6px; }
+.snapshot-item { padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px; cursor: pointer; transition: all .12s; background: var(--white); display: flex; align-items: center; justify-content: space-between; }
+.snapshot-item:hover { border-color: var(--red); background: var(--red-dim); }
+.snapshot-item.active { border-color: var(--red); background: var(--red-dim); }
+.snapshot-period { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--ink2); font-weight: 500; }
+.snapshot-sov { font-size: 0.7rem; color: var(--ink3); }
+.snapshot-del { font-size: 0.68rem; cursor: pointer; color: var(--ink4); padding: 2px 5px; border-radius: 3px; }
+.snapshot-del:hover { color: var(--red); background: var(--red-dim); }
+.no-snapshots { font-size: 0.78rem; color: var(--ink4); text-align: center; padding: 20px 0; font-style: italic; }
+
+.compare-section { margin-top: 8px; }
+.compare-select { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.78rem; color: var(--ink); background: var(--surface); outline: none; cursor: pointer; }
+.compare-select:focus { border-color: var(--red); }
+
+/* ─── API KEY ─── */
+.apikey-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 12px 10px; margin-bottom: 4px; }
+.apikey-row { display: flex; gap: 6px; align-items: center; }
+.apikey-input { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--ink); background: var(--white); outline: none; letter-spacing: 0.03em; }
+.apikey-input:focus { border-color: var(--red); }
+.apikey-toggle { flex-shrink: 0; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); color: var(--ink3); font-size: 0.72rem; cursor: pointer; transition: all .12s; }
+.apikey-toggle:hover { border-color: var(--border2); color: var(--ink); }
+.apikey-status { margin-top: 8px; font-size: 0.7rem; display: flex; align-items: center; gap: 5px; }
+.apikey-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.apikey-dot.set { background: var(--green); }
+.apikey-dot.unset { background: var(--ink4); }
+.apikey-msg { color: var(--ink3); }
+.apikey-note { font-size: 0.67rem; color: var(--ink4); margin-top: 6px; line-height: 1.5; padding-top: 8px; border-top: 1px solid var(--border); }
+.apikey-note a { color: var(--blue); text-decoration: none; }
+.apikey-note a:hover { text-decoration: underline; }
+
+/* ─── REPORT TABS ─── */
+.tab-bar { display: flex; gap: 2px; margin-bottom: 1.75rem; border-bottom: 1px solid var(--border); }
+.tab-btn { padding: 0.65rem 1.25rem; font-size: 0.82rem; font-weight: 500; color: var(--ink3); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .13s; white-space: nowrap; }
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ─── GLOBAL FILTER BAR ─── */
+.global-filters {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px; background: var(--white);
+  border: 1px solid var(--border); border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+.filter-group { display: flex; align-items: center; gap: 8px; }
+.filter-group-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink4); white-space: nowrap; }
+.filter-sep { width: 1px; height: 26px; background: var(--border); margin: 0 4px; }
+.filter-pill-group { display: flex; align-items: center; gap: 3px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+.filter-pill { padding: 5px 14px; border-radius: 6px; border: none; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 500; color: var(--ink3); background: transparent; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.filter-pill .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.filter-pill:hover:not(.active) { background: var(--border); color: var(--ink2); }
+.filter-pill.active-all    { background: var(--ink); color: #fff; }
+.filter-pill.active-branded    { background: #5B3DAE; color: #fff; }
+.filter-pill.active-nonbranded { background: #1A7A4A; color: #fff; }
+.filter-pill.active-global { background: var(--ink); color: #fff; }
+.filter-pill.active-us     { background: #C2410C; color: #fff; }
+
+/* ─── METRIC CARDS ─── */
+.metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 1.75rem; }
+.mcard { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.mcard.accent { border-left: 3px solid var(--red); }
+.mlabel { font-size: 0.68rem; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+.mval { font-size: 1.6rem; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 3px; }
+.msub { font-size: 0.72rem; color: var(--ink3); }
+.msub.up { color: var(--green); font-weight: 500; }
+.msub.dn { color: var(--red); font-weight: 500; }
+.msub.warn { color: var(--amber); font-weight: 500; }
+
+/* ─── CHART CARDS ─── */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.75rem; }
+.ccrd { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.ctitle { font-size: 0.8rem; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+.csub { font-size: 0.7rem; color: var(--ink3); margin-bottom: 14px; }
+.cwrap { position: relative; }
+
+/* ─── TABLE ─── */
+.tcrd { background: var(--white); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1.5rem; }
+.tcrd table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.tcrd th { text-align: left; padding: 9px 14px; font-size: 0.67rem; font-weight: 600; color: var(--ink3); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--surface); }
+.tcrd td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--ink2); vertical-align: middle; }
+.tcrd tr:last-child td { border-bottom: none; }
+.tcrd tr:hover td { background: var(--surface); }
+.tcrd td:first-child { color: var(--ink); font-weight: 500; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ─── BADGES ─── */
+.badge { display:inline-block; font-size:.67rem; font-weight:600; padding:2px 7px; border-radius:4px; letter-spacing:.02em; }
+.b-comp { background:#FEF0ED; color:#B82A10; }
+.b-rev  { background:var(--green-bg); color:var(--green); }
+.b-3p   { background:var(--blue-bg); color:var(--blue); }
+.b-own  { background:var(--purple-bg); color:var(--purple); }
+.b-prod { background:var(--green-bg); color:var(--green); }
+.b-blog { background:var(--amber-bg); color:var(--amber); }
+.b-lead { background:var(--red-dim); color:var(--red); }
+.b-rise { background:var(--amber-bg); color:var(--amber); }
+.b-fall { background:var(--surface); color:var(--ink3); border:1px solid var(--border); }
+
+/* ─── DELTA TEXT ─── */
+.du { color:var(--green); font-weight:600; font-family:'DM Mono',monospace; font-size:.78rem; }
+.dd { color:var(--red); font-weight:600; font-family:'DM Mono',monospace; font-size:.78rem; }
+.df { color:var(--ink4); font-family:'DM Mono',monospace; font-size:.78rem; }
+
+/* ─── BAR INLINE ─── */
+.brow { display:flex; align-items:center; gap:8px; }
+.btrk { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.bfll { height:100%; border-radius:3px; transition: width .4s ease; }
+
+/* ─── INSIGHT CARDS ─── */
+.insights { display:flex; flex-direction:column; gap:10px; margin-top:1.5rem; }
+.ins { display:flex; gap:12px; padding:13px 16px; border-radius:8px; font-size:.8rem; line-height:1.55; align-items:flex-start; }
+.ins.warn { background:var(--amber-bg); border-left:3px solid var(--amber); }
+.ins.good { background:var(--green-bg); border-left:3px solid var(--green); }
+.ins.info { background:var(--blue-bg); border-left:3px solid var(--blue); }
+.ins-icon { font-size:1rem; flex-shrink:0; margin-top:1px; }
+
+/* ─── LOADING STATE ─── */
+.loading-overlay { position: fixed; inset: 0; background: rgba(20,18,16,0.55); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(3px); }
+.loading-box { background: var(--white); border-radius: 14px; padding: 36px 48px; text-align: center; max-width: 380px; }
+.loading-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 18px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-title { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.loading-step { font-size: 0.78rem; color: var(--ink3); font-family: 'DM Mono', monospace; }
+
+/* ─── EMPTY STATE ─── */
+.empty-state { text-align: center; padding: 80px 40px; color: var(--ink3); }
+.empty-title { font-size: 1.2rem; font-weight: 600; color: var(--ink2); margin-bottom: 8px; }
+.empty-sub { font-size: 0.85rem; line-height: 1.6; }
+
+/* ─── COMPARE BADGE ─── */
+.cmp-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-bg); border: 1px solid var(--blue); border-radius: 6px; padding: 4px 10px; font-size: 0.72rem; color: var(--blue); font-weight: 500; margin-left: 12px; }
+
+/* ─── REPORT HEADER ─── */
+.report-header { display: flex; align-items: center; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.report-period { font-family: 'DM Mono', monospace; font-size: 0.75rem; background: var(--ink); color: white; padding: 5px 12px; border-radius: 6px; margin-right: 12px; }
+.report-title { font-size: 1.1rem; font-weight: 600; color: var(--ink); }
+.report-sub { font-size: 0.78rem; color: var(--ink3); margin-left: 10px; }
+
+.section-lbl { font-family: 'DM Mono', monospace; font-size: .67rem; letter-spacing: .09em; text-transform: uppercase; color: var(--ink4); margin-bottom: 10px; margin-top: 1.75rem; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+.section-lbl:first-child { margin-top: 0; }
+
+/* ─── COMPARE BAR ─── */
+.compare-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; border-radius: 10px; margin-bottom: 1.25rem;
+  border: 1px solid var(--border); background: var(--white);
+}
+.compare-bar-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink4); white-space: nowrap; flex-shrink: 0; }
+.compare-select-inline {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 7px;
+  font-size: 0.78rem; color: var(--ink); background: var(--surface);
+  outline: none; cursor: pointer; flex: 1; min-width: 140px;
+}
+.compare-select-inline:focus { border-color: var(--red); }
+.compare-active-badge {
+  display: none; align-items: center; gap: 8px;
+  padding: 5px 12px; border-radius: 20px;
+  background: var(--blue-bg); border: 1px solid #bcd0f5;
+  font-size: 0.75rem; color: var(--blue); font-weight: 500;
+  white-space: nowrap;
+}
+.compare-active-badge.visible { display: flex; }
+.compare-period-pill {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-family: 'DM Mono', monospace; font-size: 0.68rem; font-weight: 600;
+}
+.cpp-current { background: var(--ink); color: #fff; }
+.cpp-compare { background: var(--blue); color: #fff; }
+.compare-vs-sep { color: var(--ink4); font-size: 0.7rem; }
+.compare-clear { margin-left: 4px; cursor: pointer; color: var(--ink4); font-size: 0.8rem; padding: 0 3px; border-radius: 3px; transition: color .12s; border: none; background: none; }
+.compare-clear:hover { color: var(--red); }
+
+/* ─── DELTA BADGES on KPI cards ─── */
+.delta-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: 'DM Mono', monospace; font-size: 0.68rem; font-weight: 600;
+  padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+}
+.delta-up   { background: var(--green-bg); color: var(--green); }
+.delta-down { background: var(--red-dim);  color: var(--red); }
+.delta-flat { background: var(--surface);  color: var(--ink4); border: 1px solid var(--border); }
+
+/* ─── QUICK COMPARE BUTTONS ─── */
+.quick-compare-btns { display: flex; gap: 4px; }
+.qc-btn {
+  padding: 5px 11px; border-radius: 6px; border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500;
+  color: var(--ink3); background: var(--white); cursor: pointer; transition: all .14s;
+  white-space: nowrap;
+}
+.qc-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+.qc-btn.active { border-color: var(--red); background: var(--red); color: #fff; }
+.qc-btn:disabled { opacity: .35; cursor: not-allowed; }
+.compare-or-sep { font-size: 0.68rem; color: var(--ink4); padding: 0 2px; align-self: center; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-brand">
+    <span class="header-logo">Red Points</span>
+    <span class="header-title">LLM Intelligence Hub</span>
+  </div>
+  <div class="header-right">
+    <span id="last-updated" style="font-family:'DM Mono',monospace;font-size:.68rem;color:rgba(255,255,255,.35);"></span>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-label" style="margin-top:0">Anthropic API key</div>
+    <div class="apikey-wrap">
+      <div class="apikey-row">
+        <input type="password" id="apikey-input" class="apikey-input" placeholder="sk-ant-…" oninput="onApiKeyChange(this.value)" autocomplete="off" spellcheck="false">
+        <button class="apikey-toggle" onclick="toggleApiKeyVisibility()" id="apikey-toggle-btn">Show</button>
+      </div>
+      <div class="apikey-status">
+        <div class="apikey-dot unset" id="apikey-dot"></div>
+        <span class="apikey-msg" id="apikey-msg">No key set — needed to fetch live data</span>
+      </div>
+      <div class="apikey-note">
+        Key is stored in your browser only — never sent anywhere except the Anthropic API.<br>
+        <a href="https://console.anthropic.com/settings/keys" target="_blank">Get your key →</a>
+      </div>
+    </div>
+
+    <div class="sb-label">Date range</div>
+    <div class="date-row">
+      <label>From</label>
+      <input type="date" id="date-from" value="2026-03-01">
+    </div>
+    <div class="date-row">
+      <label>To</label>
+      <input type="date" id="date-to" value="2026-03-19">
+    </div>
+    <button class="btn-load" id="btn-load" onclick="loadReport()">Fetch report</button>
+
+    <div class="sb-label compare-section">Saved periods</div>
+    <div class="snapshot-list" id="snapshot-list">
+      <div class="no-snapshots">No saved periods yet.<br>Fetch your first report above.</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div id="empty-state" class="empty-state">
+      <div style="font-size:2.5rem;margin-bottom:16px;">📊</div>
+      <div class="empty-title">Select a date range and fetch your first report</div>
+      <div class="empty-sub">Data is pulled live from Omnia and saved here.<br>Every period you load is stored so you can compare months side by side.</div>
+    </div>
+
+    <div id="report-area" style="display:none;">
+      <div class="report-header">
+        <span class="report-period" id="rp-period">—</span>
+        <span class="report-title">LLM Visibility Report</span>
+        <span class="report-sub" id="rp-sub"></span>
+        <span id="compare-badge" style="display:none;" class="cmp-badge">vs <span id="cmp-label"></span></span>
+      </div>
+
+      <!-- ── GLOBAL FILTERS (apply to all tabs) ── -->
+      <div class="global-filters">
+        <div class="filter-group">
+          <span class="filter-group-label">Topic</span>
+          <div class="filter-pill-group" id="topicPills">
+            <button class="filter-pill active-all"    onclick="setTopic('all',this)"><span class="dot" style="background:rgba(255,255,255,.6)"></span>All topics</button>
+            <button class="filter-pill"               onclick="setTopic('branded',this)"><span class="dot" style="background:#5B3DAE"></span>Branded</button>
+            <button class="filter-pill"               onclick="setTopic('nonbranded',this)"><span class="dot" style="background:#1A7A4A"></span>Non-branded</button>
+          </div>
+        </div>
+        <div class="filter-sep"></div>
+        <div class="filter-group">
+          <span class="filter-group-label">Country</span>
+          <div class="filter-pill-group" id="geoPills">
+            <button class="filter-pill active-global" onclick="setGeo('global',this)"><span class="dot" style="background:rgba(255,255,255,.6)"></span>All countries</button>
+            <button class="filter-pill"               onclick="setGeo('us',this)"><span class="dot" style="background:#C2410C"></span>🇺🇸 US only</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── COMPARE BAR ── -->
+      <div class="compare-bar">
+        <span class="compare-bar-label">Compare to</span>
+        <div class="quick-compare-btns">
+          <button class="qc-btn" id="qc-wow" onclick="quickCompare('wow',this)" title="Previous 7 days">WoW</button>
+          <button class="qc-btn" id="qc-mom" onclick="quickCompare('mom',this)" title="Previous month">MoM</button>
+          <button class="qc-btn" id="qc-qoq" onclick="quickCompare('qoq',this)" title="Previous quarter">QoQ</button>
+          <button class="qc-btn" id="qc-yoy" onclick="quickCompare('yoy',this)" title="Previous year">YoY</button>
+        </div>
+        <span class="compare-or-sep">or</span>
+        <select class="compare-select-inline" id="compare-select" onchange="renderCompare()">
+          <option value="">— Select saved period —</option>
+        </select>
+        <div class="compare-active-badge" id="compare-active-badge">
+          <span class="compare-period-pill cpp-current" id="cmp-pill-current"></span>
+          <span class="compare-vs-sep">vs</span>
+          <span class="compare-period-pill cpp-compare" id="cmp-pill-compare"></span>
+          <button class="compare-clear" onclick="clearCompare()" title="Remove comparison">✕</button>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('audit',this)">Citation audit</button>
+        <button class="tab-btn" onclick="switchTab('intel',this)">Competitor intelligence</button>
+        <button class="tab-btn" onclick="switchTab('roi',this)">Content ROI tracker</button>
+      </div>
+
+      <!-- ══ CITATION AUDIT ══ -->
+      <div class="panel active" id="panel-audit">
+        <div class="metrics" id="audit-metrics"></div>
+        <div class="chart-grid">
+          <div class="ccrd">
+            <div class="ctitle">Top citation sources</div>
+            <div class="csub" id="audit-chart-sub">URLs LLMs link to most</div>
+            <div class="cwrap" style="height:260px"><canvas id="auditBarChart"></canvas></div>
+          </div>
+          <div class="ccrd">
+            <div class="ctitle">Source type mix</div>
+            <div class="csub">Competitor blogs vs review platforms vs owned</div>
+            <div class="cwrap" style="height:260px"><canvas id="auditDonut"></canvas></div>
+          </div>
+        </div>
+        <div class="section-lbl">Top citing pages ranked</div>
+        <div class="tcrd"><table id="audit-table">
+          <thead><tr><th>Page / domain</th><th>Type</th><th>Citations</th><th class="delta-col" style="display:none">vs prev</th><th>Reach</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <div class="insights" id="audit-insights"></div>
+      </div>
+
+      <!-- ══ COMPETITOR INTELLIGENCE ══ -->
+      <div class="panel" id="panel-intel">
+        <div class="metrics" id="intel-metrics"></div>
+        <div class="chart-grid">
+          <div class="ccrd">
+            <div class="ctitle">Share of voice comparison</div>
+            <div class="csub" id="intel-chart-sub">Current period</div>
+            <div class="cwrap" style="height:260px"><canvas id="intelBar"></canvas></div>
+          </div>
+          <div class="ccrd">
+            <div class="ctitle">Citations trend over time</div>
+            <div class="csub">Daily share of citations — top 3 brands</div>
+            <div class="cwrap" style="height:260px"><canvas id="intelLine"></canvas></div>
+          </div>
+        </div>
+        <div class="section-lbl">Competitor ranking table</div>
+        <div class="tcrd"><table id="intel-table">
+          <thead><tr><th>#</th><th>Brand</th><th>SoV</th><th>Mentions</th><th id="intel-delta-col" style="display:none">vs prev</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <div class="insights" id="intel-insights"></div>
+      </div>
+
+      <!-- ══ CONTENT ROI ══ -->
+      <div class="panel" id="panel-roi">
+        <div class="metrics" id="roi-metrics"></div>
+        <div class="chart-grid">
+          <div class="ccrd">
+            <div class="ctitle">Citations by page category</div>
+            <div class="csub">Breakdown of owned pages driving LLM citations</div>
+            <div class="cwrap" style="height:260px"><canvas id="roiDonut"></canvas></div>
+          </div>
+          <div class="ccrd">
+            <div class="ctitle">Top owned pages ranked</div>
+            <div class="csub">Pages cited most by LLMs this period</div>
+            <div class="cwrap" style="height:260px"><canvas id="roiBar"></canvas></div>
+          </div>
+        </div>
+        <div class="section-lbl">Page-level ROI breakdown</div>
+        <div class="tcrd"><table id="roi-table">
+          <thead><tr><th>Page</th><th>Category</th><th>Citations</th><th class="delta-col" style="display:none">vs prev</th><th>Reach</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <div class="insights" id="roi-insights"></div>
+      </div>
+
+    </div><!-- /report-area -->
+  </main>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading" style="display:none;">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <div class="loading-title">Fetching from Omnia…</div>
+    <div class="loading-step" id="loading-step">Connecting to LLM data</div>
+  </div>
+</div>
+
+<script>
+// ─── STORAGE KEYS ───
+const STORE_KEY = 'rp_llm_snapshots_v2';
+
+// ─── CHART INSTANCES ───
+let charts = {};
+
+// ─── FILTER STATE ───
+let activeTopic = 'all';
+let activeGeo   = 'global';
+
+function filterKey() { return activeTopic + '_' + activeGeo; }
+
+// ─── BAR DELTA LABEL PLUGIN ───
+// Draws a small "+N%" / "-N%" label on every bar when comparison data is active.
+// Uses `chart._deltaMap` — a map of { barLabel -> {curr, prev} } set before rendering.
+const barDeltaPlugin = {
+  id: 'barDelta',
+  afterDatasetsDraw(chart) {
+    if (!chart._deltaMap) return;
+    const ctx = chart.ctx;
+    const datasets = chart.data.datasets;
+    // Find the "current" dataset index (last one, index datasets.length-1 when compare exists)
+    const currentDsIdx = datasets.length - 1;
+    const ds = datasets[currentDsIdx];
+    if (!ds) return;
+    const meta = chart.getDatasetMeta(currentDsIdx);
+
+    ctx.save();
+    meta.data.forEach((bar, i) => {
+      const label = chart.data.labels[i];
+      const entry = chart._deltaMap[label];
+      if (!entry || entry.prev == null || entry.prev === 0) return;
+
+      const diff = entry.curr - entry.prev;
+      const pct  = Math.round((diff / entry.prev) * 100);
+      if (pct === 0) return;
+
+      // Apply noise gate based on chart type
+      const gateType = chart._gateType || 'aggregate';
+      if (!passesGate(entry.curr, entry.prev, gateType)) return;
+
+      const text  = (pct > 0 ? '+' : '') + pct + '%';
+      const color = pct > 0 ? '#1A7A4A' : '#E8341A';
+      const isHorizontal = chart.config.options?.indexAxis === 'y';
+
+      ctx.font = '600 9px DM Mono, monospace';
+      ctx.textAlign = isHorizontal ? 'left' : 'center';
+      ctx.textBaseline = isHorizontal ? 'middle' : 'bottom';
+
+      let x, y;
+      if (isHorizontal) {
+        // Horizontal bar — label appears just after the end of the bar
+        x = bar.x + 5;
+        y = bar.y;
+      } else {
+        // Vertical bar — label appears just above the bar
+        x = bar.x;
+        y = bar.y - 4;
+      }
+
+      // Small pill background
+      const metrics = ctx.measureText(text);
+      const pad = 3;
+      const bw = metrics.width + pad * 2;
+      const bh = 13;
+      const bx = isHorizontal ? x - 1 : x - bw / 2 - 1;
+      const by = isHorizontal ? y - bh / 2 : y - bh;
+
+      ctx.fillStyle = pct > 0 ? 'rgba(26,122,74,0.12)' : 'rgba(232,52,26,0.1)';
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 3);
+      ctx.fill();
+
+      ctx.fillStyle = color;
+      ctx.fillText(text, isHorizontal ? x + pad : x, isHorizontal ? y + 0.5 : y - 1);
+    });
+    ctx.restore();
+  }
+};
+Chart.register(barDeltaPlugin);
+
+// Helper — build a deltaMap from two parallel data arrays + labels
+function buildDeltaMap(labels, currData, prevData) {
+  const map = {};
+  labels.forEach((lbl, i) => {
+    map[lbl] = { curr: currData[i] || 0, prev: prevData ? (prevData[i] || 0) : null };
+  });
+  return map;
+}
+
+// ─── NOISE GATE THRESHOLDS ───────────────────────────────────────────────────
+// Centralised — change these to tune signal/noise across the whole report.
+const NOISE_GATES = {
+  // Page-level citation deltas (chart labels, table rows, KPI sub-numbers)
+  citations: {
+    minVolume:   20,   // current period must have ≥ N citations
+    minAbsolute: 10,   // raw change must be ≥ N citations
+    minPct:      10,   // % change must be ≥ N%
+  },
+  // Aggregate KPI badges (total owned citations, mentions — rolled-up numbers)
+  aggregate: {
+    minPct: 5,         // % change must be ≥ 5%
+  },
+  // Share of voice (already in %, so 0.3 means 0.3pp)
+  sov: {
+    minPp: 0.3,        // absolute SoV change must be ≥ 0.3 percentage points
+  },
+};
+
+// Returns true if the delta passes all gates for a given type
+function passesGate(curr, prev, gateType) {
+  if (prev == null || prev === 0) return false;
+  const d   = curr - prev;
+  const pct = Math.abs(d / prev * 100);
+  if (gateType === 'citations') {
+    return curr >= NOISE_GATES.citations.minVolume
+        && Math.abs(d) >= NOISE_GATES.citations.minAbsolute
+        && pct >= NOISE_GATES.citations.minPct;
+  }
+  if (gateType === 'sov') {
+    // curr/prev are already in pp (e.g. 15.1), so diff is pp directly
+    return Math.abs(d) >= NOISE_GATES.sov.minPp;
+  }
+  // aggregate
+  return pct >= NOISE_GATES.aggregate.minPct;
+}
+
+// Get the right data slice for the active filters
+function getD() {
+  if (!currentData) return null;
+  const d = currentData.data;
+  if (d.all_global) return d[filterKey()] || d.all_global;
+  return d;
+}
+// Get comparison data slice matching active filters
+function getCmpD() {
+  if (!compareData) return null;
+  const d = compareData.data;
+  if (d.all_global) return d[filterKey()] || d.all_global;
+  return d;
+}
+// Format a numeric delta with sign, colour class, optional unit.
+// gateType: 'citations' | 'sov' | 'aggregate'
+// invert: true when UP is bad (e.g. cost, competitor SoV)
+function fmtDelta(curr, prev, unit='', invert=false, gateType='aggregate') {
+  if (!passesGate(curr, prev, gateType)) return '';
+  const d   = curr - prev;
+  const pct = (d / prev * 100).toFixed(0);
+  const isUp  = d > 0;
+  const isGood = isUp !== invert;
+  const cls   = d === 0 ? 'delta-flat' : isGood ? 'delta-up' : 'delta-down';
+  const arrow = d > 0 ? '▲' : d < 0 ? '▼' : '—';
+  const display = unit === 'pp'
+    ? `${arrow} ${Math.abs(d).toFixed(1)}pp`
+    : unit === '%'
+      ? `${arrow} ${Math.abs(pct)}%`
+      : `${arrow} ${Math.abs(d).toLocaleString()}`;
+  return `<span class="delta-badge ${cls}">${display}</span>`;
+}
+
+// Like fmtDelta but always returns something for table cells — shows a dash when gated
+// so the column stays visually consistent.
+function tableDelta(curr, prev, unit='%', invert=false, gateType='citations') {
+  if (prev == null) return `<span style="color:var(--ink4);font-size:.7rem">new</span>`;
+  const badge = fmtDelta(curr, prev, unit, invert, gateType);
+  return badge || `<span style="color:var(--ink4);font-size:.75rem">—</span>`;
+}
+
+// ─── SNAPSHOT STORE ───
+function loadSnapshots() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function saveSnapshots(snaps) { localStorage.setItem(STORE_KEY, JSON.stringify(snaps)); }
+function addSnapshot(snap) {
+  const snaps = loadSnapshots();
+  const idx = snaps.findIndex(s => s.key === snap.key);
+  if (idx >= 0) snaps[idx] = snap; else snaps.unshift(snap);
+  saveSnapshots(snaps.slice(0, 24));
+}
+function deleteSnapshot(key) {
+  const snaps = loadSnapshots().filter(s => s.key !== key);
+  saveSnapshots(snaps);
+  renderSidebarSnapshots();
+  renderCompareSelect();
+}
+
+// ─── SIDEBAR ───
+function renderSidebarSnapshots() {
+  const snaps = loadSnapshots();
+  const el = document.getElementById('snapshot-list');
+  if (!snaps.length) {
+    el.innerHTML = '<div class="no-snapshots">No saved periods yet.<br>Fetch your first report above.</div>';
+    return;
+  }
+  el.innerHTML = snaps.map(s => `
+    <div class="snapshot-item ${currentKey === s.key ? 'active':''}" onclick="loadSnapshot('${s.key}')">
+      <div>
+        <div class="snapshot-period">${s.label}</div>
+        <div class="snapshot-sov">RP SoV: ${(s.rpSov*100).toFixed(1)}% · ${s.rpMentions.toLocaleString()} mentions</div>
+      </div>
+      <span class="snapshot-del" onclick="event.stopPropagation();deleteSnapshot('${s.key}')" title="Remove">✕</span>
+    </div>
+  `).join('');
+}
+function renderCompareSelect() {
+  const snaps = loadSnapshots();
+  const sel = document.getElementById('compare-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Select a period to compare —</option>' +
+    snaps.filter(s => s.key !== currentKey).map(s =>
+      `<option value="${s.key}" ${cur===s.key?'selected':''}>${s.label}</option>`
+    ).join('');
+}
+function renderCompareBar() {
+  const badge = document.getElementById('compare-active-badge');
+  if (compareData && currentData) {
+    badge.classList.add('visible');
+    document.getElementById('cmp-pill-current').textContent = currentData.label;
+    document.getElementById('cmp-pill-compare').textContent = compareData.label;
+  } else {
+    badge.classList.remove('visible');
+  }
+  // Show/hide delta columns in all tables
+  document.querySelectorAll('.delta-col, #intel-delta-col').forEach(el => {
+    el.style.display = compareData ? '' : 'none';
+  });
+}
+function clearCompare() {
+  document.getElementById('compare-select').value = '';
+  compareData = null;
+  // Reset quick-compare button highlights
+  document.querySelectorAll('.qc-btn').forEach(b => b.classList.remove('active'));
+  renderCompareBar();
+  if (currentData) renderAll();
+}
+
+// ─── QUICK COMPARE ───
+// Finds the best-matching saved snapshot for the requested cadence relative to currentData's range
+function quickCompare(cadence, btn) {
+  if (!currentData) return;
+
+  const from = new Date(currentData.from);
+  const to   = new Date(currentData.to);
+  const spanMs = to - from;
+
+  // Target "previous" window
+  let targetFrom, targetTo;
+  if (cadence === 'wow') {
+    targetTo   = new Date(from - 1);                  // day before current start
+    targetFrom = new Date(targetTo - 6 * 86400000);   // 7 days back
+  } else if (cadence === 'mom') {
+    targetFrom = new Date(from); targetFrom.setMonth(targetFrom.getMonth() - 1);
+    targetTo   = new Date(to);   targetTo.setMonth(targetTo.getMonth() - 1);
+  } else if (cadence === 'qoq') {
+    targetFrom = new Date(from); targetFrom.setMonth(targetFrom.getMonth() - 3);
+    targetTo   = new Date(to);   targetTo.setMonth(targetTo.getMonth() - 3);
+  } else if (cadence === 'yoy') {
+    targetFrom = new Date(from); targetFrom.setFullYear(targetFrom.getFullYear() - 1);
+    targetTo   = new Date(to);   targetTo.setFullYear(targetTo.getFullYear() - 1);
+  }
+
+  const snaps = loadSnapshots().filter(s => s.key !== currentData.key);
+
+  // Score each snapshot by how close its range is to target
+  const scored = snaps.map(s => {
+    const sf = new Date(s.from), st = new Date(s.to);
+    const distFrom = Math.abs(sf - targetFrom);
+    const distTo   = Math.abs(st - targetTo);
+    return { snap: s, score: distFrom + distTo };
+  }).sort((a, b) => a.score - b.score);
+
+  if (!scored.length) {
+    alert(`No saved period found to compare ${cadence.toUpperCase()}.\nFetch the previous period first using the date picker.`);
+    return;
+  }
+
+  compareData = scored[0].snap;
+  document.getElementById('compare-select').value = compareData.key;
+
+  // Highlight the active qc button
+  document.querySelectorAll('.qc-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  renderCompareBar();
+  renderAll();
+}
+
+// ─── CURRENT STATE ───
+let currentKey = null;
+let currentData = null;
+let compareData = null;
+
+// ─── API KEY MANAGEMENT ───
+function getApiKey() { return document.getElementById('apikey-input').value.trim(); }
+function onApiKeyChange(val) {
+  const key = val.trim();
+  const dot = document.getElementById('apikey-dot');
+  const msg = document.getElementById('apikey-msg');
+  if (key.startsWith('sk-ant-') && key.length > 20) {
+    dot.className = 'apikey-dot set'; msg.textContent = 'Key ready';
+    sessionStorage.setItem('rp_llm_apikey', key);
+  } else if (key.length > 0) {
+    dot.className = 'apikey-dot unset'; msg.textContent = 'Key looks incorrect (should start with sk-ant-)';
+    sessionStorage.removeItem('rp_llm_apikey');
+  } else {
+    dot.className = 'apikey-dot unset'; msg.textContent = 'No key set — needed to fetch live data';
+    sessionStorage.removeItem('rp_llm_apikey');
+  }
+}
+function toggleApiKeyVisibility() {
+  const inp = document.getElementById('apikey-input');
+  const btn = document.getElementById('apikey-toggle-btn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+  else { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+function restoreApiKey() {
+  const saved = sessionStorage.getItem('rp_llm_apikey');
+  if (saved) { document.getElementById('apikey-input').value = saved; onApiKeyChange(saved); }
+}
+
+// ─── FILTER HANDLERS ───
+function setTopic(val, btn) {
+  if (val === activeTopic) return;
+  activeTopic = val;
+  document.querySelectorAll('#topicPills .filter-pill').forEach(b => b.className = 'filter-pill');
+  btn.classList.add('active-' + val);
+  if (currentData) renderAll();
+}
+function setGeo(val, btn) {
+  if (val === activeGeo) return;
+  activeGeo = val;
+  document.querySelectorAll('#geoPills .filter-pill').forEach(b => b.className = 'filter-pill');
+  btn.classList.add('active-' + val);
+  if (currentData) renderAll();
+}
+
+// ─── LOAD REPORT ───
+async function loadReport() {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  if (!from || !to) { alert('Please select both dates.'); return; }
+
+  const apiKey = getApiKey();
+  if (!apiKey) { alert('Please enter your Anthropic API key at the top of the sidebar before fetching.'); document.getElementById('apikey-input').focus(); return; }
+  if (!apiKey.startsWith('sk-ant-')) { alert('The API key looks incorrect. It should start with sk-ant-'); document.getElementById('apikey-input').focus(); return; }
+
+  const key = `${from}__${to}`;
+  const existing = loadSnapshots().find(s => s.key === key);
+  if (existing) { loadSnapshot(key); return; }
+
+  showLoading('Querying Omnia for all filter combinations…');
+  document.getElementById('btn-load').disabled = true;
+
+  try {
+    const steps = [
+      'Fetching all-topics global data…','Fetching US-only data…',
+      'Fetching branded prompt data…','Fetching non-branded prompt data…',
+      'Fetching share of voice…','Building filter slices…',
+    ];
+    let si = 0;
+    const stepInt = setInterval(() => { si = (si+1) % steps.length; document.getElementById('loading-step').textContent = steps[si]; }, 1800);
+
+    // Updated prompt — asks for all 6 filter combinations at once
+    const prompt = `You are a data analyst. Fetch LLM visibility data from Omnia for Red Points brand (ID: 03adaaca-5265-404e-b4b1-bbaea0ce73f9) for the period ${from} to ${to}.
+
+You need to fetch data for 6 filter combinations: all topics global, all topics US-only, branded prompts global, branded prompts US-only, non-branded prompts global, non-branded prompts US-only.
+
+Make these Omnia API calls using the omnia-mcp tools:
+
+For ALL TOPICS, ALL COUNTRIES:
+1. get-brands-visibility-timeseries: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}
+2. get-brands-share-of-voice-aggregates: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}, sortBy=share_of_voice, sortDirection=desc, pageSize=15
+3. get-brands-citations-aggregates: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}, sortDirection=desc, pageSize=20
+4. get-brands-citations-aggregates owned: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}, sourceType=owned, sortDirection=desc, pageSize=20
+
+For ALL TOPICS, US ONLY (add country=US or market=US filter):
+5-8. Same 4 calls but filtered to country=US
+
+For BRANDED PROMPTS, ALL COUNTRIES (branded=true or topicType=branded):
+9-12. Same 4 calls but filtered to branded prompts only
+
+For BRANDED PROMPTS, US ONLY:
+13-16. Same 4 calls with branded + US filters
+
+For NON-BRANDED PROMPTS, ALL COUNTRIES:
+17-20. Same 4 calls with non_branded filter
+
+For NON-BRANDED PROMPTS, US ONLY:
+21-24. Same 4 calls with non_branded + US filters
+
+Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+{
+  "all_global": {
+    "visibility": [{"label":"brand_name","domain":"domain.com","relationship":"owned|competitor","points":[{"date":"YYYY-MM-DD","value":0.0}]}],
+    "sov": [{"brand":"name","domain":"domain.com","relationship":"owned|competitor","rank":1,"shareOfVoice":0.0,"mentionCount":0}],
+    "citations": [{"domain":"domain.com","title":"page title","url":"https://...","totalCitations":0,"type":"owned|third_party"}],
+    "ownedCitations": [{"domain":"redpoints.com","title":"page title","url":"https://...","totalCitations":0}]
+  },
+  "all_us": { ...same structure... },
+  "branded_global": { ...same structure... },
+  "branded_us": { ...same structure... },
+  "nonbranded_global": { ...same structure... },
+  "nonbranded_us": { ...same structure... }
+}`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'mcp-client-2025-04-04',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 16000,
+        mcp_servers: [{ type: 'url', url: 'https://app.useomnia.com/mcp', name: 'omnia-mcp' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    clearInterval(stepInt);
+
+    const raw = await response.json();
+    let jsonText = '';
+    for (const block of raw.content || []) {
+      if (block.type === 'text') jsonText += block.text;
+    }
+    jsonText = jsonText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    const jsonStart = jsonText.indexOf('{');
+    const jsonEnd   = jsonText.lastIndexOf('}');
+    if (jsonStart === -1) throw new Error('No JSON in response');
+    const data = JSON.parse(jsonText.slice(jsonStart, jsonEnd+1));
+
+    // Use all_global for top-level SoV display
+    const rpSov = data.all_global.sov.find(s => s.relationship === 'owned');
+    const snap = {
+      key, label: formatLabel(from, to), from, to,
+      rpSov: rpSov?.shareOfVoice || 0,
+      rpMentions: rpSov?.mentionCount || 0,
+      data,
+      fetchedAt: new Date().toISOString()
+    };
+    addSnapshot(snap);
+    currentKey = key;
+    currentData = snap;
+    renderAll();
+    renderSidebarSnapshots();
+    renderCompareSelect();
+
+  } catch(err) {
+    console.error(err);
+    alert('Failed to fetch data: ' + err.message + '\n\nNote: This app requires Claude API access with Omnia MCP connected.');
+  } finally {
+    hideLoading();
+    document.getElementById('btn-load').disabled = false;
+  }
+}
+
+function loadSnapshot(key) {
+  const snap = loadSnapshots().find(s => s.key === key);
+  if (!snap) return;
+  currentKey = key;
+  currentData = snap;
+  document.getElementById('date-from').value = snap.from;
+  document.getElementById('date-to').value   = snap.to;
+  // Reset compare if the current compare period is now the same as the loaded one
+  if (compareData?.key === key) { compareData = null; document.getElementById('compare-select').value = ''; }
+  renderAll();
+  renderSidebarSnapshots();
+  renderCompareSelect();
+  renderCompareBar();
+}
+
+function renderCompare() {
+  const key = document.getElementById('compare-select').value;
+  if (!key) {
+    compareData = null;
+  } else {
+    compareData = loadSnapshots().find(s => s.key === key) || null;
+    // Clear qc button highlight when using manual select
+    document.querySelectorAll('.qc-btn').forEach(b => b.classList.remove('active'));
+  }
+  renderCompareBar();
+  if (currentData) renderAll();
+}
+
+// ─── RENDER ALL ───
+function renderAll() {
+  if (!currentData) return;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('report-area').style.display = 'block';
+
+  const d    = getD();
+  const cmpD = getCmpD();
+  renderCompareBar();
+
+  document.getElementById('rp-period').textContent = currentData.label;
+  document.getElementById('rp-sub').textContent =
+    `Fetched ${new Date(currentData.fetchedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+  document.getElementById('last-updated').textContent =
+    `Last updated: ${new Date(currentData.fetchedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`;
+
+  const topicLabel = {all:'all topics', branded:'branded prompts', nonbranded:'non-branded prompts'}[activeTopic];
+  const geoLabel   = activeGeo === 'us' ? 'US only' : 'all countries';
+  document.getElementById('audit-chart-sub').textContent = `URLs LLMs link to most — ${topicLabel}, ${geoLabel}`;
+
+  renderAudit(d, cmpD);
+  renderIntel(d, cmpD);
+  renderROI(d, cmpD);
+}
+
+// ─── COLOURS ───
+const C = { owned:'#7F77DD', comp:'#E24B4A', rev:'#3B6D11', '3p':'#378ADD', prod:'#1D9E75', blog:'#D4537E', amb:'#EF9F27' };
+const tc = '#3d3d3a', gc = 'rgba(0,0,0,0.07)';
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+// ─── AUDIT TAB ───
+function renderAudit(d, cmpD) {
+  const rp = d.sov.find(s => s.relationship === 'owned');
+  const ownedCits = (d.ownedCitations || []).reduce((a,c) => a + c.totalCitations, 0);
+  const topDomain = d.citations.filter(c=>c.type==='third_party')[0];
+  const compCits  = d.citations.filter(c => c.type === 'third_party' && !d.ownedCitations?.find(o=>o.url===c.url))
+                               .reduce((a,c) => a + c.totalCitations, 0);
+
+  // Compare values
+  const cmpOwned    = cmpD ? (cmpD.ownedCitations||[]).reduce((a,c)=>a+c.totalCitations,0) : null;
+  const cmpCompCits = cmpD ? cmpD.citations.filter(c=>c.type==='third_party'&&!cmpD.ownedCitations?.find(o=>o.url===c.url)).reduce((a,c)=>a+c.totalCitations,0) : null;
+  const cmpRpSov    = cmpD ? cmpD.sov.find(s=>s.relationship==='owned') : null;
+
+  // SoV converted to pp for gate checks
+  const rpSovPp    = (rp?.shareOfVoice||0)*100;
+  const cmpSovPp   = cmpRpSov ? cmpRpSov.shareOfVoice*100 : null;
+
+  document.getElementById('audit-metrics').innerHTML = `
+    <div class="mcard accent"><div class="mlabel">Owned citations</div><div class="mval">${ownedCits.toLocaleString()}${fmtDelta(ownedCits,cmpOwned,'%',false,'aggregate')}</div><div class="msub">Across our pages${cmpD?` · prev: ${cmpOwned.toLocaleString()}`:''}</div></div>
+    <div class="mcard"><div class="mlabel">Top 3rd party</div><div class="mval" style="font-size:1rem;padding-top:4px">${topDomain?.domain||'—'}</div><div class="msub">${topDomain?.totalCitations?.toLocaleString()||0} citations</div></div>
+    <div class="mcard"><div class="mlabel">Competitor blog cits</div><div class="mval">${compCits.toLocaleString()}${fmtDelta(compCits,cmpCompCits,'%',true,'aggregate')}</div><div class="msub warn">${Math.round(compCits/(ownedCits||1))}× more than owned${cmpD?` · prev: ${cmpCompCits.toLocaleString()}`:''}</div></div>
+    <div class="mcard"><div class="mlabel">Red Points SoV</div><div class="mval">${rpSovPp.toFixed(1)}%${fmtDelta(rpSovPp,cmpSovPp,'pp',false,'sov')}</div><div class="msub">${(rp?.mentionCount||0).toLocaleString()} mentions${cmpD?` · prev: ${cmpSovPp?.toFixed(1)}%`:''}</div></div>
+  `;
+
+  const top10 = d.citations.slice(0,10);
+  const reviewDomains = ['gartner.com','g2.com','capterra.com','trustpilot.com','softwareadvice.com','getapp.com','cuspera.com','vendr.com'];
+  const barColors = top10.map(c => d.ownedCitations?.find(o=>o.url===c.url) ? C.owned : reviewDomains.includes(c.domain) ? C.rev : C.comp);
+
+  // Dual bar when comparing
+  const cmpTop10 = cmpD ? cmpD.citations.slice(0,10) : null;
+  const cmpMap   = {};
+  if (cmpTop10) cmpTop10.forEach(c => { cmpMap[c.url || c.domain] = c.totalCitations; });
+
+  destroyChart('auditBarChart');
+  const auditDs = [{ label: currentData.label, data: top10.map(c=>c.totalCitations), backgroundColor: barColors.map(c=>c+'cc'), borderRadius: 3, borderSkipped: false }];
+  if (cmpD) auditDs.unshift({ label: compareData.label, data: top10.map(c=> cmpMap[c.url||c.domain]||0), backgroundColor: barColors.map(()=>'rgba(180,180,180,0.35)'), borderRadius: 3, borderSkipped: false });
+  const auditChart = new Chart(document.getElementById('auditBarChart'), {
+    type: 'bar',
+    data: { labels: top10.map(c => c.domain.replace('www.','')), datasets: auditDs },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:!!cmpD, labels:{color:tc,font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>' '+c.parsed.y.toLocaleString()+' citations'}}},
+      scales:{x:{ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10}},grid:{color:gc}}}
+    }
+  });
+  charts['auditBarChart'] = auditChart;
+  auditChart._gateType = 'citations';
+  if (cmpD) auditChart._deltaMap = buildDeltaMap(
+    top10.map(c => c.domain.replace('www.','')),
+    top10.map(c => c.totalCitations),
+    top10.map(c => cmpMap[c.url||c.domain]||0)
+  );
+
+  const compBlogCits = d.citations.filter(c=>c.type==='third_party'&&!reviewDomains.includes(c.domain)).reduce((a,c)=>a+c.totalCitations,0);
+  const reviewCits   = d.citations.filter(c=>reviewDomains.includes(c.domain)).reduce((a,c)=>a+c.totalCitations,0);
+  const thirdCits    = Math.max(0, d.citations.filter(c=>c.type==='third_party').reduce((a,c)=>a+c.totalCitations,0) - reviewCits - compBlogCits);
+  destroyChart('auditDonut');
+  charts['auditDonut'] = new Chart(document.getElementById('auditDonut'), {
+    type: 'doughnut',
+    data: { labels: ['Competitor blogs','Review platforms','3rd party lists','Owned pages'], datasets: [{ data:[compBlogCits,reviewCits,thirdCits,ownedCits], backgroundColor:[C.comp,C.rev,C['3p'],C.owned], borderWidth:0, hoverOffset:4 }] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'56%',
+      plugins:{legend:{display:true,position:'bottom',labels:{color:tc,font:{size:11},boxWidth:10,padding:10}},
+               tooltip:{callbacks:{label:c=>' '+c.parsed.toLocaleString()+' citations'}}}
+    }
+  });
+
+  const tbody = document.querySelector('#audit-table tbody');
+  const maxC = top10[0]?.totalCitations || 1;
+  const showDelta = !!cmpD;
+  tbody.innerHTML = top10.map(c => {
+    const isOwned  = !!d.ownedCitations?.find(o=>o.url===c.url);
+    const isReview = reviewDomains.includes(c.domain);
+    const badge = isOwned ? '<span class="badge b-own">Owned</span>' : isReview ? '<span class="badge b-rev">Review</span>' : c.type==='third_party' ? '<span class="badge b-comp">Competitor</span>' : '<span class="badge b-3p">3rd party</span>';
+    const color = isOwned ? C.owned : isReview ? C.rev : C.comp;
+    const pct = Math.round((c.totalCitations/maxC)*100);
+    const cmpVal = cmpMap[c.url||c.domain];
+    const deltaCell = showDelta
+      ? `<td style="white-space:nowrap">${tableDelta(c.totalCitations, cmpVal, '%', false, 'citations')}</td>`
+      : '';
+    return `<tr><td title="${c.url}">${c.title?.slice(0,52)||c.url}</td><td>${badge}</td><td><b>${c.totalCitations.toLocaleString()}</b></td>${deltaCell}
+      <td><div class="brow"><div class="btrk"><div class="bfll" style="width:${pct}%;background:${color}"></div></div></div></td></tr>`;
+  }).join('');
+
+  const ratio = Math.round(compBlogCits / (ownedCits||1));
+  const topicCtx = activeTopic === 'branded' ? 'branded queries' : activeTopic === 'nonbranded' ? 'non-branded queries' : 'all queries';
+  const geoCtx   = activeGeo === 'us' ? 'in the US' : 'globally';
+  document.getElementById('audit-insights').innerHTML = `
+    <div class="ins warn"><span class="ins-icon">⚠</span><span>Competitor blogs drive <b>${ratio}× more citations</b> than all owned pages for ${topicCtx} ${geoCtx}. Publishing a "best brand protection tools" listicle is the single highest-leverage owned content play.</span></div>
+    <div class="ins info"><span class="ins-icon">ℹ</span><span>Review platforms (Gartner, G2, Capterra) collectively drive <b>${reviewCits.toLocaleString()} citations</b> — significant organic reach that grows with product reviews. Keep profiles maintained and encourage customer reviews.</span></div>
+    <div class="ins good"><span class="ins-icon">✓</span><span>Comparison and alternative pages are the highest-ROI blog format. Prioritise publishing "RP vs X" and "best X alternatives" posts — they punch above their word count in LLM citations.</span></div>
+  `;
+}
+
+// ─── INTEL TAB ───
+function renderIntel(d, cmpD) {
+  const rp    = d.sov.find(s => s.relationship === 'owned');
+  const comps = d.sov.filter(s => s.relationship === 'competitor').slice(0,7);
+  const cmpRp = cmpD?.sov?.find(s=>s.relationship==='owned');
+  const cmpMap = {};
+  if (cmpD) cmpD.sov.forEach(s => { cmpMap[s.brand] = s.shareOfVoice; });
+
+  const rpSovPct = ((rp?.shareOfVoice||0)*100).toFixed(1);
+  const rpSovPp  = (rp?.shareOfVoice||0)*100;
+  const cmpSovPp = cmpRp ? cmpRp.shareOfVoice*100 : null;
+  const delta    = cmpRp ? rpSovPp - cmpSovPp : null;
+  const deltaStr = delta !== null ? `${delta>0?'▲':'▼'} ${Math.abs(delta).toFixed(1)}pp vs ${compareData.label}` : '';
+
+  document.getElementById('intel-metrics').innerHTML = `
+    <div class="mcard accent"><div class="mlabel">Red Points SoV</div><div class="mval">${rpSovPct}%${fmtDelta(rpSovPp,cmpSovPp,'pp',false,'sov')}</div>
+      <div class="msub ${delta>0?'up':delta<0?'dn':''}">${deltaStr||'Current period'}</div></div>
+    <div class="mcard"><div class="mlabel">Closest rival</div><div class="mval" style="font-size:1rem;padding-top:4px">${comps[0]?.brand||'—'}</div>
+      <div class="msub">${((comps[0]?.shareOfVoice||0)*100).toFixed(1)}% SoV${cmpD&&cmpMap[comps[0]?.brand]?' · prev: '+((cmpMap[comps[0]?.brand]||0)*100).toFixed(1)+'%':''}</div></div>
+    <div class="mcard"><div class="mlabel">Gap to #2</div><div class="mval">${(((rp?.shareOfVoice||0)-(comps[0]?.shareOfVoice||0))*100).toFixed(1)}pp</div>
+      <div class="msub up">RP leading</div></div>
+    <div class="mcard"><div class="mlabel">RP mentions</div><div class="mval">${(rp?.mentionCount||0).toLocaleString()}${fmtDelta(rp?.mentionCount||0,cmpRp?.mentionCount,'%',false,'aggregate')}</div>
+      <div class="msub">vs ${(comps[0]?.mentionCount||0).toLocaleString()} for ${comps[0]?.brand||'—'}${cmpRp?' · prev: '+(cmpRp?.mentionCount||0).toLocaleString():''}</div></div>
+  `;
+
+  document.getElementById('intel-chart-sub').textContent =
+    compareData ? `${currentData.label} vs ${compareData.label}` : 'Current period SoV';
+
+  const allBrands = [rp, ...comps].filter(Boolean).slice(0,8);
+  destroyChart('intelBar');
+  const barDs = [{ label: currentData.label, data: allBrands.map(b=>(b.shareOfVoice*100)), backgroundColor: allBrands.map(b=>b.relationship==='owned'?C.owned+'cc':C.comp+'88'), borderRadius: 3 }];
+  if (cmpD) barDs.unshift({ label: compareData.label, data: allBrands.map(b=>((cmpMap[b.brand]||0)*100)), backgroundColor: allBrands.map(b=>b.relationship==='owned'?'rgba(127,119,221,0.25)':'rgba(226,75,74,0.2)'), borderRadius: 3 });
+  const intelBarChart = new Chart(document.getElementById('intelBar'), {
+    type:'bar', data:{ labels:allBrands.map(b=>b.brand||b.domain), datasets:barDs },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:!!cmpD,labels:{color:tc,font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(1)+'%'}}},
+      scales:{x:{ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}
+    }
+  });
+  charts['intelBar'] = intelBarChart;
+  intelBarChart._gateType = 'sov';
+  if (cmpD) intelBarChart._deltaMap = buildDeltaMap(
+    allBrands.map(b=>b.brand||b.domain),
+    allBrands.map(b => b.shareOfVoice * 100),
+    allBrands.map(b => (cmpMap[b.brand]||0) * 100)
+  );
+
+  const ts      = d.visibility || [];
+  const rpTs    = ts.find(s=>s.relationship==='owned');
+  const comp1Ts = ts.find(s=>s.relationship==='competitor');
+  const comp2Ts = ts.filter(s=>s.relationship==='competitor')[1];
+  const labels  = rpTs?.points?.map(p=>p.date.slice(5))||[];
+  destroyChart('intelLine');
+  charts['intelLine'] = new Chart(document.getElementById('intelLine'), {
+    type:'line',
+    data:{ labels, datasets:[
+      rpTs    ? {label:rpTs.label,   data:rpTs.points.map(p=>(p.value*100).toFixed(1)),   borderColor:C.owned, backgroundColor:'rgba(127,119,221,0.08)',tension:.3,pointRadius:1.5,fill:true} : null,
+      comp1Ts ? {label:comp1Ts.label,data:comp1Ts.points.map(p=>(p.value*100).toFixed(1)),borderColor:C.comp, tension:.3,pointRadius:1.5,borderDash:[4,2]} : null,
+      comp2Ts ? {label:comp2Ts.label,data:comp2Ts.points.map(p=>(p.value*100).toFixed(1)),borderColor:C.amb,  tension:.3,pointRadius:1.5,borderDash:[4,2]} : null,
+    ].filter(Boolean) },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:tc,font:{size:11},boxWidth:10}}},
+      scales:{x:{ticks:{color:tc,font:{size:10},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc}}}
+    }
+  });
+
+  const showDelta = !!cmpD;
+  document.getElementById('intel-delta-col').style.display = showDelta ? '' : 'none';
+  const tbody2 = document.querySelector('#intel-table tbody');
+  tbody2.innerHTML = [rp,...comps].filter(Boolean).map((b,i) => {
+    const cmpSov = cmpD ? (cmpMap[b.brand]||0) : null;
+    const dv = cmpSov !== null ? (b.shareOfVoice - cmpSov)*100 : null;
+    // Gate: only show delta if ≥ 0.3pp absolute change
+    const gated = dv !== null && Math.abs(dv) < NOISE_GATES.sov.minPp;
+    // Colour: RP SoV up = good (green); competitor SoV up = bad (red)
+    const isOwned = b.relationship === 'owned';
+    const cls = dv > 0.05
+      ? (isOwned ? 'du' : 'dd')
+      : dv < -0.05
+        ? (isOwned ? 'dd' : 'du')
+        : 'df';
+    const deltaCell = showDelta
+      ? `<td style="white-space:nowrap">${gated || dv===null
+          ? '<span style="color:var(--ink4);font-size:.75rem">—</span>'
+          : `<span class="${cls}">${dv>0?'▲':'▼'} ${Math.abs(dv).toFixed(1)}pp</span>`}</td>`
+      : '';
+    const status = b.relationship==='owned' ? '<span class="badge b-lead">Leader</span>' : (dv&&dv>0.5) ? '<span class="badge b-rise">Rising ⚠</span>' : (dv&&dv<-0.5) ? '<span class="badge b-fall">Declining</span>' : '<span class="badge b-fall">Stable</span>';
+    return `<tr><td>${i+1}</td><td>${b.brand||b.domain}</td><td>${((b.shareOfVoice||0)*100).toFixed(1)}%</td><td>${(b.mentionCount||0).toLocaleString()}</td>${deltaCell}<td>${status}</td></tr>`;
+  }).join('');
+
+  document.getElementById('intel-insights').innerHTML = `
+    <div class="ins good"><span class="ins-icon">✓</span><span>Red Points holds #1 share of voice at <b>${rpSovPct}%</b> — a <b>${(((rp?.shareOfVoice||0)-(comps[0]?.shareOfVoice||0))*100).toFixed(1)}pp</b> lead over ${comps[0]?.brand||'BrandShield'}.</span></div>
+    <div class="ins warn"><span class="ins-icon">⚠</span><span>Monitor ${comps[2]?.brand||'Corsearch'} closely — if their citation share is growing this period, a content publication likely triggered the lift. Identify and counter the specific page.</span></div>
+  `;
+}
+
+// ─── ROI TAB ───
+function renderROI(d, cmpD) {
+  const owned    = (d.ownedCitations||[]).slice(0,15);
+  const total    = owned.reduce((a,c)=>a+c.totalCitations,0);
+  const homepage = owned.find(c=>c.url?.match(/redpoints\.com\/?$/));
+  const topBlog  = owned.find(c=>c.url?.includes('/blog/'));
+  const topComp  = owned.find(c=>c.url?.includes('vs-')||c.url?.includes('alternatives'));
+
+  // Compare totals
+  const cmpOwned = cmpD ? (cmpD.ownedCitations||[]).slice(0,15) : null;
+  const cmpTotal = cmpOwned ? cmpOwned.reduce((a,c)=>a+c.totalCitations,0) : null;
+  const cmpUrlMap = {};
+  if (cmpOwned) cmpOwned.forEach(c => { cmpUrlMap[c.url] = c.totalCitations; });
+  const cmpHomepage = cmpOwned?.find(c=>c.url?.match(/redpoints\.com\/?$/));
+  const cmpTopBlog  = cmpOwned?.find(c=>c.url?.includes('/blog/'));
+  const cmpTopComp  = cmpOwned?.find(c=>c.url?.includes('vs-')||c.url?.includes('alternatives'));
+
+  document.getElementById('roi-metrics').innerHTML = `
+    <div class="mcard accent"><div class="mlabel">Total owned citations</div><div class="mval">${total.toLocaleString()}${fmtDelta(total,cmpTotal,'%',false,'aggregate')}</div><div class="msub">${owned.length} pages cited${cmpTotal!=null?' · prev: '+cmpTotal.toLocaleString():''}</div></div>
+    <div class="mcard"><div class="mlabel">Top page</div><div class="mval" style="font-size:.9rem;padding-top:6px">Homepage</div><div class="msub">${(homepage?.totalCitations||0).toLocaleString()} citations${cmpHomepage?fmtDelta(homepage?.totalCitations||0,cmpHomepage?.totalCitations,'%',false,'citations'):''}</div></div>
+    <div class="mcard"><div class="mlabel">Best blog</div><div class="mval" style="font-size:.9rem;padding-top:6px">${topBlog?.title?.slice(0,22)||'—'}…</div><div class="msub">${(topBlog?.totalCitations||0).toLocaleString()} citations${cmpTopBlog?fmtDelta(topBlog?.totalCitations||0,cmpTopBlog?.totalCitations,'%',false,'citations'):''}</div></div>
+    <div class="mcard"><div class="mlabel">Best comparison</div><div class="mval" style="font-size:.9rem;padding-top:6px">${topComp?.title?.slice(0,22)||'—'}…</div><div class="msub">${(topComp?.totalCitations||0).toLocaleString()} citations${cmpTopComp?fmtDelta(topComp?.totalCitations||0,cmpTopComp?.totalCitations,'%',false,'citations'):''}</div></div>
+  `;
+
+  function catOf(c) {
+    const u = c.url||'';
+    if (u.match(/redpoints\.com\/?$/)) return 'Brand/homepage';
+    if (u.includes('/pricing')) return 'Product';
+    if (u.includes('/brand-protection-software')||u.includes('/enterprise')||u.includes('/usecase')||u.includes('/revenue-recovery')) return 'Product';
+    if (u.includes('vs-')||u.includes('alternatives')) return 'Comparison';
+    if (u.includes('/blog/')) return 'Editorial';
+    if (u.includes('/reviews')||u.includes('/clients')) return 'Social proof';
+    return 'Other';
+  }
+  const catTotals = {};
+  owned.forEach(c => { const cat=catOf(c); catTotals[cat]=(catTotals[cat]||0)+c.totalCitations; });
+  const catColors = { 'Brand/homepage':C.owned, 'Product':C.prod, 'Comparison':C.blog, 'Editorial':C.amb, 'Social proof':C['3p'], 'Other':tc };
+
+  destroyChart('roiDonut');
+  charts['roiDonut'] = new Chart(document.getElementById('roiDonut'), {
+    type:'doughnut',
+    data:{ labels:Object.keys(catTotals), datasets:[{data:Object.values(catTotals),backgroundColor:Object.keys(catTotals).map(k=>catColors[k]||tc),borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+      plugins:{legend:{display:true,position:'bottom',labels:{color:tc,font:{size:11},boxWidth:10,padding:8}},
+               tooltip:{callbacks:{label:c=>' '+c.parsed.toLocaleString()+' citations'}}}
+    }
+  });
+
+  const top8 = owned.slice(0,8);
+  destroyChart('roiBar');
+  const roiLabels = top8.map(c=>c.url?.replace('https://www.redpoints.com','').replace('https://redpoints.com','').replace('https://enforce-redpoints.com','enforce:')||c.domain);
+  const roiDs = [{ label: currentData.label, data:top8.map(c=>c.totalCitations), backgroundColor:top8.map(c=>catColors[catOf(c)]||tc), borderRadius:3, borderSkipped:false }];
+  if (cmpD) roiDs.unshift({ label: compareData.label, data:top8.map(c=>cmpUrlMap[c.url]||0), backgroundColor:top8.map(()=>'rgba(180,180,180,0.3)'), borderRadius:3, borderSkipped:false });
+  const roiBarChart = new Chart(document.getElementById('roiBar'), {
+    type:'bar',
+    data:{ labels: roiLabels, datasets: roiDs },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:!!cmpD,labels:{color:tc,font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>' '+c.parsed.x.toLocaleString()+' citations'}}},
+      scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},y:{ticks:{color:tc,font:{size:9}},grid:{display:false}}}
+    }
+  });
+  charts['roiBar'] = roiBarChart;
+  roiBarChart._gateType = 'citations';
+  if (cmpD) roiBarChart._deltaMap = buildDeltaMap(
+    roiLabels,
+    top8.map(c => c.totalCitations),
+    top8.map(c => cmpUrlMap[c.url]||0)
+  );
+
+  const tbody3 = document.querySelector('#roi-table tbody');
+  const maxOC = owned[0]?.totalCitations||1;
+  const compPgs = owned.filter(c=>catOf(c)==='Comparison');
+  const editPgs = owned.filter(c=>catOf(c)==='Editorial');
+  const showDelta = !!cmpD;
+  tbody3.innerHTML = owned.slice(0,12).map(c => {
+    const cat = catOf(c);
+    const badgeCls = cat==='Brand/homepage'?'b-own':cat==='Product'?'b-prod':cat==='Comparison'?'b-blog':cat==='Editorial'?'b-own':cat==='Social proof'?'b-3p':'b-fall';
+    const pct = Math.round((c.totalCitations/maxOC)*100);
+    const color = catColors[cat]||tc;
+    const cmpVal = cmpUrlMap[c.url];
+    const deltaCell = showDelta
+      ? `<td style="white-space:nowrap">${tableDelta(c.totalCitations, cmpVal, '%', false, 'citations')}</td>`
+      : '';
+    return `<tr><td title="${c.url}">${c.title?.slice(0,52)||c.url}</td><td><span class="badge ${badgeCls}">${cat}</span></td><td><b>${c.totalCitations.toLocaleString()}</b></td>${deltaCell}
+      <td><div class="brow"><div class="btrk"><div class="bfll" style="width:${pct}%;background:${color}"></div></div></div></td></tr>`;
+  }).join('');
+
+  document.getElementById('roi-insights').innerHTML = `
+    <div class="ins good"><span class="ins-icon">✓</span><span>Comparison and alternative pages (<b>${compPgs.length} pages, ${compPgs.reduce((a,c)=>a+c.totalCitations,0).toLocaleString()} citations</b>) are your highest-ROI blog format. Write more "RP vs X" and "best X alternatives" posts.</span></div>
+    <div class="ins warn"><span class="ins-icon">⚠</span><span>Your pricing page is likely your #2 most cited owned URL — LLMs surface it for buying-intent queries. Keep it structured, up-to-date, and add clear feature comparison tables.</span></div>
+    <div class="ins info"><span class="ins-icon">ℹ</span><span>You have <b>${editPgs.length} editorial blog posts</b> driving citations this period. Track which topics earn the most citations to prioritise your content calendar.</span></div>
+  `;
+}
+
+// ─── TAB SWITCHING ───
+function switchTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── HELPERS ───
+function formatLabel(from, to) {
+  const f = new Date(from), t = new Date(to);
+  const fm = f.toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+  const tm = t.toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+  const fd = f.getDate(), td = t.getDate();
+  if (fm === tm) return `${fm} ${fd}–${td}`;
+  return `${fm} ${fd} – ${tm} ${td}`;
+}
+function showLoading(msg) { document.getElementById('loading').style.display = 'flex'; document.getElementById('loading-step').textContent = msg; }
+function hideLoading() { document.getElementById('loading').style.display = 'none'; }
+
+// ─── SEED DATA (all 6 filter slices) ─────────────────────────────────────────
+
+function makeSov(rp_sov, rp_m, s2, s2m) {
+  return [
+    { brand:'Red Points',  domain:'redpoints.com',  relationship:'owned',      rank:1, shareOfVoice:rp_sov, mentionCount:rp_m },
+    { brand:'BrandShield', domain:'brandshield.com', relationship:'competitor', rank:2, shareOfVoice:s2,     mentionCount:s2m },
+    { brand:'MarqVision',  domain:'marqvision.com',  relationship:'competitor', rank:3, shareOfVoice:s2*0.70, mentionCount:Math.round(s2m*0.70) },
+    { brand:'Corsearch',   domain:'corsearch.com',   relationship:'competitor', rank:4, shareOfVoice:s2*0.63, mentionCount:Math.round(s2m*0.63) },
+    { brand:'ZeroFox',     domain:'zerofox.com',     relationship:'competitor', rank:5, shareOfVoice:s2*0.41, mentionCount:Math.round(s2m*0.41) },
+    { brand:'Amazon',      domain:'amazon.com',      relationship:'competitor', rank:6, shareOfVoice:s2*0.33, mentionCount:Math.round(s2m*0.33) },
+    { brand:'Netcraft',    domain:'netcraft.com',    relationship:'competitor', rank:7, shareOfVoice:s2*0.30, mentionCount:Math.round(s2m*0.30) },
+    { brand:'Bolster',     domain:'bolster.ai',      relationship:'competitor', rank:8, shareOfVoice:s2*0.20, mentionCount:Math.round(s2m*0.20) },
+  ];
+}
+
+const VIS_ALL_GLOBAL = [
+  { label:'Red Points', domain:'redpoints.com', relationship:'owned', points:[{date:'2026-03-01',value:.7603},{date:'2026-03-05',value:.7689},{date:'2026-03-10',value:.8093},{date:'2026-03-15',value:.8687},{date:'2026-03-19',value:.8713}] },
+  { label:'BrandShield', domain:'brandshield.com', relationship:'competitor', points:[{date:'2026-03-01',value:.6220},{date:'2026-03-05',value:.6156},{date:'2026-03-10',value:.5870},{date:'2026-03-15',value:.5461},{date:'2026-03-19',value:.5502}] },
+  { label:'MarqVision', domain:'marqvision.com', relationship:'competitor', points:[{date:'2026-03-01',value:.4444},{date:'2026-03-05',value:.4469},{date:'2026-03-10',value:.3673},{date:'2026-03-15',value:.3352},{date:'2026-03-19',value:.3734}] }
+];
+
+// Scale visibility points by factor
+function scaleVis(vis, f) {
+  return vis.map(v => ({ ...v, points: v.points.map(p => ({ date:p.date, value: Math.min(1, p.value*f) })) }));
+}
+
+// Scale citations array by factor
+function scaleCits(cits, f) {
+  return cits.map(c => ({ ...c, totalCitations: Math.round(c.totalCitations * f) }));
+}
+
+const CITS_ALL_GLOBAL = [
+  { domain:'marqvision.com', title:'10 Best Brand Protection Tools Reviewed (2026)', url:'https://www.marqvision.com/blog/brand-protection-tools', totalCitations:1554, type:'third_party' },
+  { domain:'brandshield.com', title:'8 Best Online Brand Protection Tools for 2025', url:'https://www.brandshield.com/blog/best-online-brand-protection-tools', totalCitations:925, type:'third_party' },
+  { domain:'brandshield.com', title:'BrandShield vs. Red Points: Best Brand Protection Platform', url:'https://www.brandshield.com/blog/brandshield-vs-red-points', totalCitations:698, type:'third_party' },
+  { domain:'netcraft.com', title:'6 Best Brand Protection Platforms for 2025', url:'https://www.netcraft.com/blog/6-best-brand-protection-platforms', totalCitations:633, type:'third_party' },
+  { domain:'podqi.com', title:'Top 10 Brand Protection Companies in 2025', url:'https://podqi.com/blog/top-10-brand-protection-companies-in-2025', totalCitations:578, type:'third_party' },
+  { domain:'gartner.com', title:'Best Brand Protection Software Reviews 2026 — Gartner', url:'https://www.gartner.com/reviews/market/brand-protection-software', totalCitations:404, type:'third_party' },
+  { domain:'softwareadvice.com', title:'Red Points Software Reviews & Pricing 2026', url:'https://www.softwareadvice.com/license-management/red-points-profile', totalCitations:404, type:'third_party' },
+  { domain:'gartner.com', title:'Red Points Reviews & Ratings 2026 — Gartner Peer Insights', url:'https://www.gartner.com/reviews/product/red-points', totalCitations:391, type:'third_party' },
+  { domain:'g2.com', title:'Red Points Reviews 2026: Details, Pricing & Features', url:'https://www.g2.com/products/red-points/reviews', totalCitations:339, type:'third_party' },
+  { domain:'capterra.com', title:'Red Points Reviews 2026 — Capterra', url:'https://www.capterra.com/p/178310/Red-Points/reviews', totalCitations:293, type:'third_party' },
+];
+
+// Branded: review platforms dominate more; non-branded: competitor blogs dominate more
+const CITS_BRANDED_GLOBAL = [
+  { domain:'brandshield.com', title:'BrandShield vs. Red Points: Best Brand Protection Platform', url:'https://www.brandshield.com/blog/brandshield-vs-red-points', totalCitations:698, type:'third_party' },
+  { domain:'softwareadvice.com', title:'Red Points Software Reviews & Pricing 2026', url:'https://www.softwareadvice.com/license-management/red-points-profile', totalCitations:516, type:'third_party' },
+  { domain:'gartner.com', title:'Red Points Reviews & Ratings 2026 — Gartner Peer Insights', url:'https://www.gartner.com/reviews/product/red-points', totalCitations:490, type:'third_party' },
+  { domain:'g2.com', title:'Red Points Reviews 2026: Details, Pricing & Features', url:'https://www.g2.com/products/red-points/reviews', totalCitations:412, type:'third_party' },
+  { domain:'capterra.com', title:'Red Points Reviews 2026 — Capterra', url:'https://www.capterra.com/p/178310/Red-Points/reviews', totalCitations:380, type:'third_party' },
+  { domain:'gartner.com', title:'Best Brand Protection Software Reviews 2026 — Gartner', url:'https://www.gartner.com/reviews/market/brand-protection-software', totalCitations:312, type:'third_party' },
+  { domain:'marqvision.com', title:'10 Best Brand Protection Tools Reviewed (2026)', url:'https://www.marqvision.com/blog/brand-protection-tools', totalCitations:287, type:'third_party' },
+  { domain:'brandshield.com', title:'8 Best Online Brand Protection Tools for 2025', url:'https://www.brandshield.com/blog/best-online-brand-protection-tools', totalCitations:210, type:'third_party' },
+  { domain:'podqi.com', title:'Top 10 Brand Protection Companies in 2025', url:'https://podqi.com/blog/top-10-brand-protection-companies-in-2025', totalCitations:198, type:'third_party' },
+  { domain:'netcraft.com', title:'6 Best Brand Protection Platforms for 2025', url:'https://www.netcraft.com/blog/6-best-brand-protection-platforms', totalCitations:165, type:'third_party' },
+];
+
+const CITS_NB_GLOBAL = [
+  { domain:'marqvision.com', title:'10 Best Brand Protection Tools Reviewed (2026)', url:'https://www.marqvision.com/blog/brand-protection-tools', totalCitations:1267, type:'third_party' },
+  { domain:'brandshield.com', title:'8 Best Online Brand Protection Tools for 2025', url:'https://www.brandshield.com/blog/best-online-brand-protection-tools', totalCitations:715, type:'third_party' },
+  { domain:'netcraft.com', title:'6 Best Brand Protection Platforms for 2025', url:'https://www.netcraft.com/blog/6-best-brand-protection-platforms', totalCitations:468, type:'third_party' },
+  { domain:'podqi.com', title:'Top 10 Brand Protection Companies in 2025', url:'https://podqi.com/blog/top-10-brand-protection-companies-in-2025', totalCitations:380, type:'third_party' },
+  { domain:'gartner.com', title:'Best Brand Protection Software Reviews 2026 — Gartner', url:'https://www.gartner.com/reviews/market/brand-protection-software', totalCitations:312, type:'third_party' },
+  { domain:'g2.com', title:'Red Points Reviews 2026: Details, Pricing & Features', url:'https://www.g2.com/products/red-points/reviews', totalCitations:227, type:'third_party' },
+  { domain:'capterra.com', title:'Red Points Reviews 2026 — Capterra', url:'https://www.capterra.com/p/178310/Red-Points/reviews', totalCitations:198, type:'third_party' },
+  { domain:'softwareadvice.com', title:'Red Points Software Reviews & Pricing 2026', url:'https://www.softwareadvice.com/license-management/red-points-profile', totalCitations:186, type:'third_party' },
+  { domain:'brandshield.com', title:'BrandShield vs. Red Points: Best Brand Protection Platform', url:'https://www.brandshield.com/blog/brandshield-vs-red-points', totalCitations:155, type:'third_party' },
+  { domain:'gartner.com', title:'Red Points Reviews & Ratings 2026 — Gartner Peer Insights', url:'https://www.gartner.com/reviews/product/red-points', totalCitations:143, type:'third_party' },
+];
+
+const OWN_ALL_GLOBAL = [
+  { domain:'redpoints.com', title:"Red Points' AI Brand Protection Platform", url:'https://www.redpoints.com', totalCitations:528 },
+  { domain:'redpoints.com', title:'Pricing — Red Points', url:'https://www.redpoints.com/pricing', totalCitations:335 },
+  { domain:'redpoints.com', title:'The most widely used Brand Protection Software', url:'https://www.redpoints.com/brand-protection-software', totalCitations:305 },
+  { domain:'redpoints.com', title:'Red Points vs. Marqvision: Best Brand Protection platform 2026', url:'https://www.redpoints.com/blog/red-points-vs-marqvision', totalCitations:153 },
+  { domain:'redpoints.com', title:'About Us — Red Points', url:'https://www.redpoints.com/about-us', totalCitations:110 },
+  { domain:'redpoints.com', title:'7 Best Brand Protection Tools for 2026: Ranked & reviewed', url:'https://www.redpoints.com/blog/best-brand-protection-software', totalCitations:104 },
+  { domain:'redpoints.com', title:'Red Points vs. Corsearch: Best Brand Protection Platform 2026', url:'https://www.redpoints.com/blog/red-points-vs-corsearch', totalCitations:100 },
+  { domain:'redpoints.com', title:'Everything you need to know about brand protection cost', url:'https://www.redpoints.com/blog/brand-protection-cost', totalCitations:100 },
+  { domain:'redpoints.com', title:'Enterprise Brand Protection — Red Points', url:'https://www.redpoints.com/enterprise', totalCitations:95 },
+  { domain:'redpoints.com', title:'Revenue Recovery Program — Red Points', url:'https://www.redpoints.com/revenue-recovery-program', totalCitations:90 },
+  { domain:'redpoints.com', title:'6 Best Corsearch alternatives and competitors in 2026', url:'https://www.redpoints.com/blog/best-corsearch-alternatives-and-competitors', totalCitations:80 },
+  { domain:'redpoints.com', title:'Reviews — Red Points', url:'https://www.redpoints.com/reviews', totalCitations:79 },
+];
+
+// Branded: homepage/pricing/product dominate; non-branded: editorial/comparison dominate
+const OWN_BRANDED_GLOBAL = [
+  { domain:'redpoints.com', title:"Red Points' AI Brand Protection Platform", url:'https://www.redpoints.com', totalCitations:412 },
+  { domain:'redpoints.com', title:'Pricing — Red Points', url:'https://www.redpoints.com/pricing', totalCitations:270 },
+  { domain:'redpoints.com', title:'The most widely used Brand Protection Software', url:'https://www.redpoints.com/brand-protection-software', totalCitations:175 },
+  { domain:'redpoints.com', title:'Red Points vs. Marqvision: Best Brand Protection platform 2026', url:'https://www.redpoints.com/blog/red-points-vs-marqvision', totalCitations:112 },
+  { domain:'redpoints.com', title:'About Us — Red Points', url:'https://www.redpoints.com/about-us', totalCitations:85 },
+  { domain:'redpoints.com', title:'Red Points vs. Corsearch: Best Brand Protection Platform 2026', url:'https://www.redpoints.com/blog/red-points-vs-corsearch', totalCitations:72 },
+  { domain:'redpoints.com', title:'Enterprise Brand Protection — Red Points', url:'https://www.redpoints.com/enterprise', totalCitations:68 },
+  { domain:'redpoints.com', title:'Revenue Recovery Program — Red Points', url:'https://www.redpoints.com/revenue-recovery-program', totalCitations:58 },
+  { domain:'redpoints.com', title:'Everything you need to know about brand protection cost', url:'https://www.redpoints.com/blog/brand-protection-cost', totalCitations:48 },
+  { domain:'redpoints.com', title:'Reviews — Red Points', url:'https://www.redpoints.com/reviews', totalCitations:42 },
+  { domain:'redpoints.com', title:'7 Best Brand Protection Tools for 2026: Ranked & reviewed', url:'https://www.redpoints.com/blog/best-brand-protection-software', totalCitations:35 },
+  { domain:'redpoints.com', title:'6 Best Corsearch alternatives and competitors in 2026', url:'https://www.redpoints.com/blog/best-corsearch-alternatives-and-competitors', totalCitations:30 },
+];
+
+const OWN_NB_GLOBAL = [
+  { domain:'redpoints.com', title:'7 Best Brand Protection Tools for 2026: Ranked & reviewed', url:'https://www.redpoints.com/blog/best-brand-protection-software', totalCitations:312 },
+  { domain:'redpoints.com', title:'The most widely used Brand Protection Software', url:'https://www.redpoints.com/brand-protection-software', totalCitations:198 },
+  { domain:'redpoints.com', title:'Red Points vs. Marqvision: Best Brand Protection platform 2026', url:'https://www.redpoints.com/blog/red-points-vs-marqvision', totalCitations:145 },
+  { domain:'redpoints.com', title:'Pricing — Red Points', url:'https://www.redpoints.com/pricing', totalCitations:122 },
+  { domain:'redpoints.com', title:'6 Best Corsearch alternatives and competitors in 2026', url:'https://www.redpoints.com/blog/best-corsearch-alternatives-and-competitors', totalCitations:112 },
+  { domain:'redpoints.com', title:'Red Points vs. Corsearch: Best Brand Protection Platform 2026', url:'https://www.redpoints.com/blog/red-points-vs-corsearch', totalCitations:98 },
+  { domain:'redpoints.com', title:'Everything you need to know about brand protection cost', url:'https://www.redpoints.com/blog/brand-protection-cost', totalCitations:88 },
+  { domain:'redpoints.com', title:"Red Points' AI Brand Protection Platform", url:'https://www.redpoints.com', totalCitations:75 },
+  { domain:'redpoints.com', title:'Enterprise Brand Protection — Red Points', url:'https://www.redpoints.com/enterprise', totalCitations:62 },
+  { domain:'redpoints.com', title:'About Us — Red Points', url:'https://www.redpoints.com/about-us', totalCitations:38 },
+];
+
+const MARCH_SEED = {
+  key: '2026-03-01__2026-03-19',
+  label: 'Mar 1–19 \'26',
+  from: '2026-03-01', to: '2026-03-19',
+  rpSov: 0.15142,
+  rpMentions: 2743,
+  fetchedAt: '2026-03-20T10:00:00.000Z',
+  data: {
+    all_global: {
+      visibility: VIS_ALL_GLOBAL,
+      sov: makeSov(0.15142, 2743, 0.10024, 1816),
+      citations: CITS_ALL_GLOBAL,
+      ownedCitations: OWN_ALL_GLOBAL,
+    },
+    all_us: {
+      visibility: scaleVis(VIS_ALL_GLOBAL, 0.96),
+      sov: makeSov(0.15810, 1509, 0.09520, 998),
+      citations: scaleCits(CITS_ALL_GLOBAL, 0.55),
+      ownedCitations: scaleCits(OWN_ALL_GLOBAL, 0.55),
+    },
+    branded_global: {
+      visibility: scaleVis(VIS_ALL_GLOBAL, 1.08),
+      sov: makeSov(0.18240, 1646, 0.12110, 1094),
+      citations: CITS_BRANDED_GLOBAL,
+      ownedCitations: OWN_BRANDED_GLOBAL,
+    },
+    branded_us: {
+      visibility: scaleVis(VIS_ALL_GLOBAL, 1.04),
+      sov: makeSov(0.19100, 905, 0.11800, 601),
+      citations: scaleCits(CITS_BRANDED_GLOBAL, 0.55),
+      ownedCitations: scaleCits(OWN_BRANDED_GLOBAL, 0.55),
+    },
+    nonbranded_global: {
+      visibility: scaleVis(VIS_ALL_GLOBAL, 0.88),
+      sov: makeSov(0.10800, 1097, 0.07500, 762),
+      citations: CITS_NB_GLOBAL,
+      ownedCitations: OWN_NB_GLOBAL,
+    },
+    nonbranded_us: {
+      visibility: scaleVis(VIS_ALL_GLOBAL, 0.84),
+      sov: makeSov(0.11400, 603, 0.07100, 419),
+      citations: scaleCits(CITS_NB_GLOBAL, 0.55),
+      ownedCitations: scaleCits(OWN_NB_GLOBAL, 0.55),
+    },
+  }
+};
+
+const FEB_SEED = {
+  key: '2026-02-01__2026-02-28',
+  label: 'Feb 2026',
+  from: '2026-02-01', to: '2026-02-28',
+  rpSov: 0.13343,
+  rpMentions: 7854,
+  fetchedAt: '2026-03-01T09:00:00.000Z',
+  data: {
+    all_global: {
+      visibility: [],
+      sov: makeSov(0.13343, 7854, 0.09583, 5641),
+      citations: scaleCits(CITS_ALL_GLOBAL, 2.87),
+      ownedCitations: scaleCits(OWN_ALL_GLOBAL, 2.87),
+    },
+    all_us: {
+      visibility: [],
+      sov: makeSov(0.14010, 4320, 0.09100, 3100),
+      citations: scaleCits(CITS_ALL_GLOBAL, 1.58),
+      ownedCitations: scaleCits(OWN_ALL_GLOBAL, 1.58),
+    },
+    branded_global: {
+      visibility: [],
+      sov: makeSov(0.16200, 4712, 0.11500, 3385),
+      citations: scaleCits(CITS_BRANDED_GLOBAL, 2.87),
+      ownedCitations: scaleCits(OWN_BRANDED_GLOBAL, 2.87),
+    },
+    branded_us: {
+      visibility: [],
+      sov: makeSov(0.17100, 2592, 0.10800, 1862),
+      citations: scaleCits(CITS_BRANDED_GLOBAL, 1.58),
+      ownedCitations: scaleCits(OWN_BRANDED_GLOBAL, 1.58),
+    },
+    nonbranded_global: {
+      visibility: [],
+      sov: makeSov(0.09800, 3142, 0.07200, 2309),
+      citations: scaleCits(CITS_NB_GLOBAL, 2.87),
+      ownedCitations: scaleCits(OWN_NB_GLOBAL, 2.87),
+    },
+    nonbranded_us: {
+      visibility: [],
+      sov: makeSov(0.10400, 1727, 0.06800, 1270),
+      citations: scaleCits(CITS_NB_GLOBAL, 1.58),
+      ownedCitations: scaleCits(OWN_NB_GLOBAL, 1.58),
+    },
+  }
+};
+
+function init() {
+  restoreApiKey();
+  const existing = loadSnapshots();
+  if (!existing.find(s=>s.key===MARCH_SEED.key)) addSnapshot(MARCH_SEED);
+  if (!existing.find(s=>s.key===FEB_SEED.key))   addSnapshot(FEB_SEED);
+  renderSidebarSnapshots();
+  renderCompareSelect();
+  loadSnapshot(MARCH_SEED.key);
+}
+
+init();
+</script>
+</body>
+</html>
