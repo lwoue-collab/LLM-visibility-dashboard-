@@ -1087,6 +1087,8 @@ function renderCompare() {
 }
 
 // ─── LOAD REPORT (API) ───
+// Fetches each of the 6 filter slices in its own API call so Claude can
+// complete all 4 Omnia tool calls without hitting token limits.
 async function loadReport() {
   const from = document.getElementById('date-from').value;
   const to   = document.getElementById('date-to').value;
@@ -1098,56 +1100,103 @@ async function loadReport() {
   const existing = loadSnapshots().find(s => s.key === key);
   if (existing) { loadSnapshot(key); return; }
 
-  showLoading('Querying Omnia for all filter combinations…');
+  showLoading('Starting fetch…');
   document.getElementById('btn-load').disabled = true;
 
-  const steps = ['Fetching all-topics global data…','Fetching US-only data…','Fetching branded prompt data…','Fetching non-branded prompt data…','Fetching share of voice…','Building filter slices…'];
-  let si = 0; let prog = 5;
-  const stepInt = setInterval(() => { si = (si+1) % steps.length; document.getElementById('loading-step').textContent = steps[si]; prog = Math.min(prog + 14, 88); document.getElementById('loading-bar').style.width = prog + '%'; }, 1800);
+  // The 6 filter slices to fetch, with human labels for the progress display
+  const SLICES = [
+    { sliceKey: 'all_global',        topic: 'all',          country: 'global', label: 'All topics — all countries' },
+    { sliceKey: 'all_us',            topic: 'all',          country: 'US',     label: 'All topics — US only' },
+    { sliceKey: 'branded_global',    topic: 'branded',      country: 'global', label: 'Branded prompts — all countries' },
+    { sliceKey: 'branded_us',        topic: 'branded',      country: 'US',     label: 'Branded prompts — US only' },
+    { sliceKey: 'nonbranded_global', topic: 'non_branded',  country: 'global', label: 'Non-branded prompts — all countries' },
+    { sliceKey: 'nonbranded_us',     topic: 'non_branded',  country: 'US',     label: 'Non-branded prompts — US only' },
+  ];
 
-  const prompt = `You are a data analyst. Fetch LLM visibility data from Omnia for Red Points brand (ID: 03adaaca-5265-404e-b4b1-bbaea0ce73f9) for the period ${from} to ${to}.
+  // Build the prompt for a single slice
+  function slicePrompt(topic, country) {
+    const topicFilter  = topic  === 'all' ? '' : `, topicType=${topic}`;
+    const countryFilter = country === 'global' ? '' : `, country=${country}`;
+    const filters = topicFilter + countryFilter;
+    return `You are a data analyst with access to the Omnia MCP server.
+Fetch LLM visibility data for Red Points (brandId: 03adaaca-5265-404e-b4b1-bbaea0ce73f9) for ${from} to ${to}${filters ? ' with filters: ' + filters.slice(2) : ''}.
 
-You need to fetch data for 6 filter combinations: all topics global, all topics US-only, branded prompts global, branded prompts US-only, non-branded prompts global, non-branded prompts US-only.
+Make exactly these 4 Omnia API calls:
+1. get-brands-visibility-timeseries   brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9 startDate=${from} endDate=${to}${filters}
+2. get-brands-share-of-voice-aggregates  brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9 startDate=${from} endDate=${to} sortBy=share_of_voice sortDirection=desc pageSize=15${filters}
+3. get-brands-citations-aggregates   brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9 startDate=${from} endDate=${to} sortDirection=desc pageSize=20${filters}
+4. get-brands-citations-aggregates   brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9 startDate=${from} endDate=${to} sourceType=owned sortDirection=desc pageSize=20${filters}
 
-Make these Omnia API calls:
-For ALL TOPICS, ALL COUNTRIES:
-1. get-brands-visibility-timeseries: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}
-2. get-brands-share-of-voice-aggregates: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}, sortBy=share_of_voice, sortDirection=desc, pageSize=15
-3. get-brands-citations-aggregates: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}, sortDirection=desc, pageSize=20
-4. get-brands-citations-aggregates owned: brandId=03adaaca-5265-404e-b4b1-bbaea0ce73f9, startDate=${from}, endDate=${to}, sourceType=owned, sortDirection=desc, pageSize=20
-For ALL TOPICS, US ONLY (add country=US filter): same 4 calls with US filter
-For BRANDED PROMPTS, ALL COUNTRIES: same 4 calls with branded filter
-For BRANDED PROMPTS, US ONLY: same 4 calls with branded + US filters
-For NON-BRANDED PROMPTS, ALL COUNTRIES: same 4 calls with non_branded filter
-For NON-BRANDED PROMPTS, US ONLY: same 4 calls with non_branded + US filters
+Return ONLY a valid JSON object, no markdown, no explanation:
+{
+  "visibility": [{"label":"brand name","domain":"domain.com","relationship":"owned|competitor","points":[{"date":"YYYY-MM-DD","value":0.0}]}],
+  "sov":        [{"brand":"name","domain":"domain.com","relationship":"owned|competitor","rank":1,"shareOfVoice":0.0,"mentionCount":0}],
+  "citations":  [{"domain":"domain.com","title":"page title","url":"https://...","totalCitations":0,"type":"owned|third_party"}],
+  "ownedCitations": [{"domain":"redpoints.com","title":"page title","url":"https://...","totalCitations":0}]
+}`;
+  }
 
-Return ONLY valid JSON (no markdown) with this structure:
-{"all_global":{"visibility":[{"label":"brand","domain":"domain.com","relationship":"owned|competitor","points":[{"date":"YYYY-MM-DD","value":0.0}]}],"sov":[{"brand":"name","domain":"domain.com","relationship":"owned|competitor","rank":1,"shareOfVoice":0.0,"mentionCount":0}],"citations":[{"domain":"domain.com","title":"title","url":"https://...","totalCitations":0,"type":"owned|third_party"}],"ownedCitations":[{"domain":"redpoints.com","title":"title","url":"https://...","totalCitations":0}]},"all_us":{...},"branded_global":{...},"branded_us":{...},"nonbranded_global":{...},"nonbranded_us":{...}}`;
+  // Call the API for one slice and return parsed JSON
+  async function fetchSlice(topic, country) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'mcp-client-2025-04-04',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        mcp_servers: [{ type: 'url', url: 'https://app.useomnia.com/mcp', name: 'omnia-mcp' }],
+        messages: [{ role: 'user', content: slicePrompt(topic, country) }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status} on ${topic}/${country}`);
+    const raw = await res.json();
+    // Collect all text blocks
+    let text = (raw.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const js = text.indexOf('{'), je = text.lastIndexOf('}');
+    if (js === -1) throw new Error(`No JSON returned for ${topic}/${country}`);
+    return JSON.parse(text.slice(js, je + 1));
+  }
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-beta':'mcp-client-2025-04-04'},
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:16000, mcp_servers:[{type:'url',url:'https://app.useomnia.com/mcp',name:'omnia-mcp'}], messages:[{role:'user',content:prompt}] })
-    });
-    clearInterval(stepInt);
-    document.getElementById('loading-bar').style.width = '95%';
-    const raw = await response.json();
-    let jsonText = '';
-    for (const block of raw.content || []) { if (block.type === 'text') jsonText += block.text; }
-    jsonText = jsonText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
-    const js = jsonText.indexOf('{'), je = jsonText.lastIndexOf('}');
-    if (js === -1) throw new Error('No JSON in response');
-    const data = JSON.parse(jsonText.slice(js, je+1));
-    const rpSov = data.all_global.sov.find(s => s.relationship === 'owned');
-    const snap = { key, label:formatLabel(from,to), from, to, rpSov:rpSov?.shareOfVoice||0, rpMentions:rpSov?.mentionCount||0, data, fetchedAt:new Date().toISOString() };
-    addSnapshot(snap);
-    currentKey = key; currentData = snap;
+    const data = {};
+
+    for (let i = 0; i < SLICES.length; i++) {
+      const slice = SLICES[i];
+      const pct = Math.round(((i) / SLICES.length) * 90) + 5;
+      document.getElementById('loading-step').textContent = `(${i + 1}/6) Fetching ${slice.label}…`;
+      document.getElementById('loading-bar').style.width = pct + '%';
+
+      data[slice.sliceKey] = await fetchSlice(slice.topic, slice.country);
+    }
+
     document.getElementById('loading-bar').style.width = '100%';
-    renderAll(); renderSidebarSnapshots(); renderCompareSelect();
-    toast('Report loaded successfully', 'success');
-  } catch(err) {
+    document.getElementById('loading-step').textContent = 'Building report…';
+
+    const rpSov = data.all_global.sov.find(s => s.relationship === 'owned');
+    const snap = {
+      key, label: formatLabel(from, to), from, to,
+      rpSov: rpSov?.shareOfVoice || 0,
+      rpMentions: rpSov?.mentionCount || 0,
+      data,
+      fetchedAt: new Date().toISOString(),
+    };
+    addSnapshot(snap);
+    currentKey = key;
+    currentData = snap;
+    renderAll();
+    renderSidebarSnapshots();
+    renderCompareSelect();
+    toast('All 6 filter slices fetched successfully ✓', 'success');
+
+  } catch (err) {
     console.error(err);
-    toast('Failed to fetch: ' + err.message, 'error');
+    toast('Fetch failed: ' + err.message, 'error');
   } finally {
     hideLoading();
     document.getElementById('btn-load').disabled = false;
