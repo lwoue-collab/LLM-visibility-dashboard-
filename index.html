@@ -1822,7 +1822,7 @@ function init() {
   const existing = loadSnapshots();
   if (!existing.find(s=>s.key===MARCH_SEED.key)) addSnapshot(MARCH_SEED);
   if (!existing.find(s=>s.key===FEB_SEED.key))   addSnapshot(FEB_SEED);
-  renderSidebarSnapshots();
+  renderSidebarSnapshots(); 
   renderCompareSelect();
   loadSnapshot(MARCH_SEED.key);
 }
